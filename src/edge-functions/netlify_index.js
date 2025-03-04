@@ -16,15 +16,19 @@ export default async(request,env,ctx) => {
         }
     
         // 处理静态资源
-        if (url.pathname === '/' || url.pathname === '/index.html') {
+        const filePath = url.pathname;
+        console.log('filePath:', filePath);
+        if (filePath === '/' || filePath === '/index.html') {
+          return context.rewrite('../static/index.html');
+        }
+        /* if (url.pathname === '/' || url.pathname === '/index.html') {
           console.log('Serving index.html',env);
           return new Response(await env.__STATIC_CONTENT.get('index.html'), {
             headers: {
               'content-type': 'text/html;charset=UTF-8',
             },
-          });
-        }
-    
+          }); */
+        
         // 处理其他静态资源
         const asset = await env.__STATIC_CONTENT.get(url.pathname.slice(1));
         if (asset) {
