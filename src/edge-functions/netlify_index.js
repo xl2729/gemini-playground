@@ -41,7 +41,8 @@ export default {
 
     return new Response('Not found', { status: 404 });
   },
-	
+  export const config: Config = {
+  path: "/",
 };
 
 function getContentType(path) {
@@ -194,7 +195,3 @@ async function handleAPIRequest(request, env) {
     });
   }
 }
-
-  export const config = {
-    path: "/*"
-  };
