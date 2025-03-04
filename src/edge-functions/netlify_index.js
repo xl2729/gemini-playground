@@ -193,7 +193,8 @@ async function handleAPIRequest(request, env) {
       }
     });
   }
-export const config = {
+}
+
+  export const config = {
     path: "/*"
   };
-}
