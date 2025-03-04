@@ -37,10 +37,11 @@ export default {
       });
     }
 
-
+  
 
     return new Response('Not found', { status: 404 });
   },
+	
 };
 
 function getContentType(path) {
@@ -192,8 +193,7 @@ async function handleAPIRequest(request, env) {
       }
     });
   }
+export const config = {
+    path: "/*"
+  };
 }
-
-export const config: Config = {
-  path: "/",
-};
