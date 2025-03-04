@@ -40,9 +40,11 @@ export default {
   
 
     return new Response('Not found', { status: 404 });
-  }
-  export const config = {
-    path: "/*"
+  },
+};
+
+export const config = {
+	path: "/*"
 };
 
 function getContentType(path) {
