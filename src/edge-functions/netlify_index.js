@@ -1,4 +1,4 @@
-
+const assetManifest = {};
 
 export default {
   async fetch(request, env, ctx) {
@@ -183,7 +183,7 @@ async function handleWebSocket(request, env) {
 
 async function handleAPIRequest(request, env) {
   try {
-    const worker = await import('./api_proxy/worker.mjs');
+    const worker = await import('../api_proxy/worker.mjs');
     return await worker.default.fetch(request);
   } catch (error) {
     console.error('API request error:', error);
