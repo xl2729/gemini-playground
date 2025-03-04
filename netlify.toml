@@ -1,0 +1,5 @@
+[build]
+  publish = "src"
+  edge_functions = "src/edge-functions"
+[dev]
+  publish = "src"
