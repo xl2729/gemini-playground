@@ -5,6 +5,12 @@
   publish = "src"
   edge_functions = "src/edge-functions"
 [[redirects]]
+  from = "/api/*"
+  to = "/.netlify/edge-functions/netlify_index"
+  status = 200
+  force = true
+[[redirects]]
   from = "/*"
   to = "/.netlify/edge-functions/netlify_index"
   status = 200
+  force = true

@@ -18,11 +18,17 @@ export default async(request, context, env) => {
 
     // 处理静态资源
     if (url.pathname === '/' || url.pathname === '/index.html') {
-      return context.rewrite('/index.html');
+      const html = await env.__STATIC_CONTENT.get('index.html');
+      return new Response(html, {
+        headers: {
+          'content-type': 'text/html;charset=UTF-8',
+        },
+      });
     }
 
     // 处理其他静态资源
-    const asset = await env.__STATIC_CONTENT.get(url.pathname.slice(1));
+    const assetPath = url.pathname.slice(1);
+    const asset = await env.__STATIC_CONTENT.get(assetPath);
     if (asset) {
       const contentType = getContentType(url.pathname);
       return new Response(asset, {
@@ -33,7 +39,8 @@ export default async(request, context, env) => {
       });
     }
 
-    return new Response('Not found', { status: 404 });
+    // 如果找不到资源，尝试重定向到 index.html
+    return context.rewrite('/index.html');
   } catch (error) {
     console.error('Request handling error:', error);
     return new Response('Internal Server Error', { status: 500 });
