@@ -3,3 +3,8 @@
   edge_functions = "src/edge-functions"
 [dev]
   publish = "src"
+  edge_functions = "src/edge-functions"
+[[redirects]]
+  from = "/*"
+  to = "/.netlify/edge-functions/netlify_index"
+  status = 200
