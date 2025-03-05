@@ -1,6 +1,6 @@
 const assetManifest = {};
 
-export default async(request, context, env) => {
+export default async(request, env) => {
   try {
     const url = new URL(request.url);
     
@@ -19,6 +19,10 @@ export default async(request, context, env) => {
     // 处理静态资源
     if (url.pathname === '/' || url.pathname === '/index.html') {
       const html = await env.__STATIC_CONTENT.get('index.html');
+      if (!html) {
+        console.error('index.html not found');
+        return new Response('Not Found', { status: 404 });
+      }
       return new Response(html, {
         headers: {
           'content-type': 'text/html;charset=UTF-8',
@@ -27,8 +31,14 @@ export default async(request, context, env) => {
     }
 
     // 处理其他静态资源
-    const assetPath = url.pathname.slice(1);
+    let assetPath = url.pathname;
+    if (assetPath.startsWith('/')) {
+      assetPath = assetPath.slice(1);
+    }
+    
+    console.log('Trying to load asset:', assetPath);
     const asset = await env.__STATIC_CONTENT.get(assetPath);
+    
     if (asset) {
       const contentType = getContentType(url.pathname);
       return new Response(asset, {
@@ -39,8 +49,8 @@ export default async(request, context, env) => {
       });
     }
 
-    // 如果找不到资源，尝试重定向到 index.html
-    return context.rewrite('/index.html');
+    console.error('Asset not found:', assetPath);
+    return new Response('Not Found', { status: 404 });
   } catch (error) {
     console.error('Request handling error:', error);
     return new Response('Internal Server Error', { status: 500 });

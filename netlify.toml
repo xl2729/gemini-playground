@@ -10,6 +10,11 @@
   status = 200
   force = true
 [[redirects]]
+  from = "/assets/*"
+  to = "/.netlify/edge-functions/netlify_index"
+  status = 200
+  force = true
+[[redirects]]
   from = "/*"
   to = "/.netlify/edge-functions/netlify_index"
   status = 200
