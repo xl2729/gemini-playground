@@ -49,31 +49,67 @@ async function handleStaticContent(url, env) {
   
   // 处理根路径和 index.html
   if (assetPath === '/' || assetPath === '/index.html') {
-    assetPath = 'index.html';
-  } else if (assetPath.startsWith('/')) {
-    assetPath = assetPath.slice(1);
+    assetPath = '/index.html';
   }
   
   console.log('Trying to load asset:', assetPath);
-  const asset = await env.__STATIC_CONTENT.get(assetPath);
   
-  if (!asset) {
-    console.error('Asset not found:', assetPath);
-    return new Response('Not Found', { 
-      status: 404,
+  try {
+    // 在Netlify环境中，我们需要使用fetch来获取静态资源
+    // 构建相对于当前请求的静态资源URL
+    const staticUrl = new URL(assetPath, url.origin);
+    console.log('Fetching static asset from:', staticUrl.toString());
+    
+    const response = await fetch(staticUrl.toString());
+    
+    if (!response.ok) {
+      console.error('Asset not found:', assetPath, 'Status:', response.status);
+      
+      // 尝试返回自定义404页面
+      try {
+        const notFoundUrl = new URL('/404.html', url.origin);
+        const notFoundResponse = await fetch(notFoundUrl.toString());
+        
+        if (notFoundResponse.ok) {
+          const notFoundContent = await notFoundResponse.arrayBuffer();
+          return new Response(notFoundContent, { 
+            status: 404,
+            headers: {
+              'content-type': 'text/html;charset=UTF-8',
+            }
+          });
+        }
+      } catch (notFoundError) {
+        console.error('Error loading 404 page:', notFoundError);
+      }
+      
+      // 如果无法加载自定义404页面，返回简单的404响应
+      return new Response('Not Found', { 
+        status: 404,
+        headers: {
+          'content-type': 'text/plain;charset=UTF-8',
+        }
+      });
+    }
+    
+    const contentType = getContentType(url.pathname);
+    const asset = await response.arrayBuffer();
+    
+    return new Response(asset, {
+      headers: {
+        'content-type': `${contentType};charset=UTF-8`,
+        'cache-control': 'public, max-age=31536000',
+      },
+    });
+  } catch (error) {
+    console.error('Error fetching asset:', assetPath, error);
+    return new Response('Error loading resource', { 
+      status: 500,
       headers: {
         'content-type': 'text/plain;charset=UTF-8',
       }
     });
   }
-
-  const contentType = getContentType(url.pathname);
-  return new Response(asset, {
-    headers: {
-      'content-type': `${contentType};charset=UTF-8`,
-      'cache-control': 'public, max-age=31536000',
-    },
-  });
 }
 
 function getContentType(path) {
@@ -171,8 +207,8 @@ function getContentType(path) {
   
   async function handleAPIRequest(request, env) {
     try {
-      // 需要修改导入路径
-      const worker = await import('../api_proxy/worker.mjs');
+      // 使用绝对路径导入
+      const worker = await import('/api_proxy/worker.mjs');
       return await worker.default.fetch(request);
     } catch (error) {
       console.error('API request error:', error);
