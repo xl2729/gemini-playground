@@ -2,10 +2,22 @@ const assetManifest = {};
 
 export default async(request, env) => {
   try {
+    // 添加 CORS 预检请求处理
+    if (request.method === 'OPTIONS') {
+      return new Response(null, {
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        },
+      });
+    }
+    
     const url = new URL(request.url);
+    console.log('Request URL:', request.url);
     
     // 处理 WebSocket 连接
-    if (request.headers.get('Upgrade') === 'websocket') {
+    if (request.headers.get('Upgrade')?.toLowerCase() === 'websocket') {
       return handleWebSocket(request, env);
     }
     
@@ -17,45 +29,52 @@ export default async(request, env) => {
     }
 
     // 处理静态资源
-    if (url.pathname === '/' || url.pathname === '/index.html') {
-      const html = await env.__STATIC_CONTENT.get('index.html');
-      if (!html) {
-        console.error('index.html not found');
-        return new Response('Not Found', { status: 404 });
-      }
-      return new Response(html, {
-        headers: {
-          'content-type': 'text/html;charset=UTF-8',
-        },
-      });
-    }
-
-    // 处理其他静态资源
-    let assetPath = url.pathname;
-    if (assetPath.startsWith('/')) {
-      assetPath = assetPath.slice(1);
-    }
+    return await handleStaticContent(url, env);
     
-    console.log('Trying to load asset:', assetPath);
-    const asset = await env.__STATIC_CONTENT.get(assetPath);
-    
-    if (asset) {
-      const contentType = getContentType(url.pathname);
-      return new Response(asset, {
-        headers: {
-          'content-type': contentType,
-          'cache-control': 'public, max-age=31536000',
-        },
-      });
-    }
-
-    console.error('Asset not found:', assetPath);
-    return new Response('Not Found', { status: 404 });
   } catch (error) {
     console.error('Request handling error:', error);
-    return new Response('Internal Server Error', { status: 500 });
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    return new Response(errorMessage, { 
+      status: 500,
+      headers: {
+        'content-type': 'text/plain;charset=UTF-8',
+      }
+    });
   }
 };
+
+// 新增静态资源处理函数
+async function handleStaticContent(url, env) {
+  let assetPath = url.pathname;
+  
+  // 处理根路径和 index.html
+  if (assetPath === '/' || assetPath === '/index.html') {
+    assetPath = 'index.html';
+  } else if (assetPath.startsWith('/')) {
+    assetPath = assetPath.slice(1);
+  }
+  
+  console.log('Trying to load asset:', assetPath);
+  const asset = await env.__STATIC_CONTENT.get(assetPath);
+  
+  if (!asset) {
+    console.error('Asset not found:', assetPath);
+    return new Response('Not Found', { 
+      status: 404,
+      headers: {
+        'content-type': 'text/plain;charset=UTF-8',
+      }
+    });
+  }
+
+  const contentType = getContentType(url.pathname);
+  return new Response(asset, {
+    headers: {
+      'content-type': `${contentType};charset=UTF-8`,
+      'cache-control': 'public, max-age=31536000',
+    },
+  });
+}
 
 function getContentType(path) {
     const ext = path.split('.').pop().toLowerCase();
@@ -152,6 +171,7 @@ function getContentType(path) {
   
   async function handleAPIRequest(request, env) {
     try {
+      // 需要修改导入路径
       const worker = await import('../api_proxy/worker.mjs');
       return await worker.default.fetch(request);
     } catch (error) {
